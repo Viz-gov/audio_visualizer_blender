@@ -26,7 +26,10 @@ export default function AudioUpload({ onFilesSelected }: AudioUploadProps) {
   const [elapsedMs, setElapsedMs] = useState(0);
   const renderTimerRef = useRef<NodeJS.Timer | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isPlayingBoth, setIsPlayingBoth] = useState(false);
+  const bgBlenderRef = useRef<HTMLVideoElement | null>(null);
+  const compositedRef = useRef<HTMLVideoElement | null>(null);
+  const finalRef = useRef<HTMLVideoElement | null>(null);
+  const [isPlayingEverything, setIsPlayingEverything] = useState(false);
   const [maskUrl, setMaskUrl] = useState<string | null>(null);
   const [maskReady, setMaskReady] = useState(false);
   const [isRenderingMask, setIsRenderingMask] = useState(false);
@@ -283,25 +286,45 @@ export default function AudioUpload({ onFilesSelected }: AudioUploadProps) {
     }
   }, [featuresResult, normalizeMeta]);
 
-  const onPlayBoth = useCallback(async () => {
+  const onPlayEverything = useCallback(async () => {
     try {
       const a = audioRef.current;
-      const v = videoRef.current;
-      if (!a || !v) return;
-      if (isPlayingBoth) {
+      const bg = bgBlenderRef.current;
+      const comp = compositedRef.current;
+      const final = finalRef.current;
+      
+      if (!a || !bg || !comp || !final) return;
+      
+      if (isPlayingEverything) {
+        // Pause everything
         a.pause();
-        v.pause();
-        setIsPlayingBoth(false);
+        bg.pause();
+        comp.pause();
+        final.pause();
+        setIsPlayingEverything(false);
       } else {
-        // align times
-        const t = a.currentTime || 0;
-        try { v.currentTime = t; } catch {}
-        await a.play();
-        await v.play();
-        setIsPlayingBoth(true);
+        // Play everything synchronized
+        const currentTime = a.currentTime || 0;
+        
+        // Align all videos to the same time
+        try { bg.currentTime = currentTime; } catch {}
+        try { comp.currentTime = currentTime; } catch {}
+        try { final.currentTime = currentTime; } catch {}
+        
+        // Play all simultaneously
+        await Promise.all([
+          a.play(),
+          bg.play(),
+          comp.play(),
+          final.play()
+        ]);
+        
+        setIsPlayingEverything(true);
       }
-    } catch {}
-  }, [isPlayingBoth]);
+    } catch (error) {
+      console.error('Error playing everything:', error);
+    }
+  }, [isPlayingEverything]);
 
   // Run Blender automation
   const runBlenderAutomation = async () => {
@@ -488,17 +511,6 @@ export default function AudioUpload({ onFilesSelected }: AudioUploadProps) {
           {guideUrl && (
             <div className="mt-3 w-full">
               <video ref={videoRef} controls src={guideUrl} className="w-full rounded-lg" />
-              <div className="mt-2 flex justify-center">
-                {guideReady && (
-                  <button
-                    type="button"
-                    onClick={onPlayBoth}
-                    className="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700"
-                  >
-                    {isPlayingBoth ? "Pause Both" : "Play Both"}
-                  </button>
-                )}
-              </div>
             </div>
           )}
           {maskUrl && (
@@ -565,6 +577,7 @@ export default function AudioUpload({ onFilesSelected }: AudioUploadProps) {
                   <div>
                     <h4 className="font-medium text-blue-700 mb-2">🎨 Background Video (Blender)</h4>
                     <video
+                      ref={bgBlenderRef}
                       controls
                       className="w-full max-w-2xl rounded border"
                       src={bgBlenderUrl}
@@ -578,6 +591,7 @@ export default function AudioUpload({ onFilesSelected }: AudioUploadProps) {
                   <div>
                     <h4 className="font-medium text-blue-700 mb-2">🎭 Composited Video (Waveform + Background)</h4>
                     <video
+                      ref={compositedRef}
                       controls
                       className="w-full max-w-2xl rounded border"
                       src={compositedUrl}
@@ -591,6 +605,7 @@ export default function AudioUpload({ onFilesSelected }: AudioUploadProps) {
                   <div>
                     <h4 className="font-medium text-blue-700 mb-2">🎵 Final Video (With Audio)</h4>
                     <video
+                      ref={finalRef}
                       controls
                       className="w-full max-w-2xl rounded border"
                       src={finalUrl}
@@ -600,6 +615,21 @@ export default function AudioUpload({ onFilesSelected }: AudioUploadProps) {
                   </div>
                 )}
               </div>
+              
+              {/* Play Everything Button */}
+              {finalUrl && (
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={onPlayEverything}
+                    className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                  >
+                    {isPlayingEverything ? "⏸️ Pause Everything" : "🎬 Play Everything"}
+                  </button>
+                  <p className="mt-2 text-sm text-blue-600">
+                    Plays all videos and audio simultaneously
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
