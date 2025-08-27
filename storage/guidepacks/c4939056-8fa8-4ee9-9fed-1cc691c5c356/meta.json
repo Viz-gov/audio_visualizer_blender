@@ -1,0 +1,14 @@
+{
+  "has_id3": false,
+  "title": null,
+  "artist": null,
+  "album": null,
+  "encoder": null,
+  "bitrate_kbps": 192,
+  "duration_s": 1.068125,
+  "sample_rate": 48000,
+  "channels": 2,
+  "path_audio_wav": "D:\\aviz-mvp\\storage\\guidepacks\\c4939056-8fa8-4ee9-9fed-1cc691c5c356\\audio.wav",
+  "id": "c4939056-8fa8-4ee9-9fed-1cc691c5c356",
+  "dir": "D:\\aviz-mvp\\storage\\guidepacks\\c4939056-8fa8-4ee9-9fed-1cc691c5c356"
+}
